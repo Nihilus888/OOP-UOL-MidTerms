@@ -4,50 +4,49 @@
 #include "User.h"    
 #include "OrderBookEntry.h"
 #include "CSVReader.h"
+#include "UserService.h"
 
 MerkelMain::MerkelMain()
+    : orderBook("20200317.csv") // <-- provide your CSV file here
 {
-
 }
 
 void MerkelMain::init()
 {
-    User currentUser;
+    int input;
 
-    std::cout << "Do you have an account? (y/n): ";
-    std::string answer;
-    std::getline(std::cin, answer);
+    // Login / Registration loop
+    while (!isLoggedIn)
+    {
+        std::cout << "1: Register\n2: Login\nChoose: ";
+        std::string choice;
+        std::getline(std::cin, choice);
 
-    if (answer == "y" || answer == "Y") {
-        currentUser = loginUser();
-        if (currentUser.username.empty()) {
-            std::cout << "Login failed. Exiting...\n";
-            return;
+        if (choice == "1") {
+            currentUser = UserService::registerUser();
+            if (!currentUser.username.empty())
+                isLoggedIn = true;
         }
-    } else {
-        registerUser();
-        std::cout << "Please login with your new credentials.\n";
-        currentUser = loginUser();
-        if (currentUser.username.empty()) {
-            std::cout << "Login failed. Exiting...\n";
-            return;
+        else if (choice == "2") {
+            currentUser = UserService::loginUser();
+            if (!currentUser.username.empty())
+                isLoggedIn = true;
         }
     }
 
-    int input;
+    std::cout << "\nWelcome, " << currentUser.fullName << "!\n";
+
     currentTime = orderBook.getEarliestTime();
-
-    // Associate wallet with logged-in user
-    wallet.insertCurrency("BTC", 10);  // example initial fund
-    wallet.username = currentUser.username;  // link wallet to user
-
+    wallet.insertCurrency("BTC", 10);
+    
     while(true)
     {
         printMenu();
         input = getUserOption();
-        processUserOption(input, currentUser); // pass currentUser if needed
+        processUserOption(input);
     }
 }
+
 
 void MerkelMain::printMenu()
 {
@@ -119,7 +118,7 @@ void MerkelMain::enterAsk()
                 tokens[0], 
                 OrderBookType::ask 
             );
-            obe.username = "simuser";
+            obe.username = currentUser.username;
             if (wallet.canFulfillOrder(obe))
             {
                 std::cout << "Wallet looks good. " << std::endl;
@@ -155,7 +154,7 @@ void MerkelMain::enterBid()
                 tokens[0], 
                 OrderBookType::bid 
             );
-            obe.username = "simuser";
+            obe.username = currentUser.username;
 
             if (wallet.canFulfillOrder(obe))
             {

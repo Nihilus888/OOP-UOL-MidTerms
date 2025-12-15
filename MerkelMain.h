@@ -4,30 +4,30 @@
 #include "OrderBookEntry.h"
 #include "OrderBook.h"
 #include "Wallet.h"
-
+#include "User.h"
 
 class MerkelMain
 {
-    public:
-        MerkelMain();
-        /** Call this to start the sim */
-        void init();
-    private: 
-        void printMenu();
-        void printHelp();
-        void printMarketStats();
-        void enterAsk();
-        void enterBid();
-        void printWallet();
-        void gotoNextTimeframe();
-        int getUserOption();
-        void processUserOption(int userOption);
-        void showCandlesticks();
+public:
+    MerkelMain();
+    void init();
+    void printMenu();
+    void printHelp();
+    void printMarketStats();
+    void enterAsk();
+    void enterBid();
+    void printWallet();
+    void gotoNextTimeframe();
+    int getUserOption();
+    void showCandlesticks();
+    void processUserOption(int userOption);
 
-        std::string currentTime;
+private:
+    OrderBook orderBook;
+    Wallet wallet;
+    std::string currentTime;
 
-//        OrderBook orderBook{"20200317.csv"};
-	OrderBook orderBook{"20200601.csv"};
-        Wallet wallet;
-
+    // Add these for login/registration
+    User currentUser;
+    bool isLoggedIn = false;
 };

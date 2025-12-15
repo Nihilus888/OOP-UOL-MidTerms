@@ -1,17 +1,18 @@
 #pragma once
+
 #include <string>
 
-class User {
+class User
+{
 public:
-    std::string username;      // Unique 10-digit number
-    std::string fullname;
-    std::string email;
-    size_t passwordHash;       // hashed using std::hash
-};
+    User();
+    User(const std::string& username,
+         const std::string& fullName,
+         const std::string& email,
+         size_t passwordHash);
 
-// Function declarations
-std::string generateUsername();
-size_t hashPassword(const std::string& password);
-bool userExists(const std::string& email, const std::string& fullname);
-void registerUser();
-User loginUser();
+    std::string username;   // 10-digit generated ID
+    std::string fullName;
+    std::string email;
+    size_t passwordHash;    // std::hash result
+};
