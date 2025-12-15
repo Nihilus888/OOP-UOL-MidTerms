@@ -1,6 +1,7 @@
 #include "MerkelMain.h"
 #include <iostream>
 #include <vector>
+#include "User.h"    
 #include "OrderBookEntry.h"
 #include "CSVReader.h"
 
@@ -11,19 +12,42 @@ MerkelMain::MerkelMain()
 
 void MerkelMain::init()
 {
+    User currentUser;
+
+    std::cout << "Do you have an account? (y/n): ";
+    std::string answer;
+    std::getline(std::cin, answer);
+
+    if (answer == "y" || answer == "Y") {
+        currentUser = loginUser();
+        if (currentUser.username.empty()) {
+            std::cout << "Login failed. Exiting...\n";
+            return;
+        }
+    } else {
+        registerUser();
+        std::cout << "Please login with your new credentials.\n";
+        currentUser = loginUser();
+        if (currentUser.username.empty()) {
+            std::cout << "Login failed. Exiting...\n";
+            return;
+        }
+    }
+
     int input;
     currentTime = orderBook.getEarliestTime();
 
-    wallet.insertCurrency("BTC", 10);
+    // Associate wallet with logged-in user
+    wallet.insertCurrency("BTC", 10);  // example initial fund
+    wallet.username = currentUser.username;  // link wallet to user
 
     while(true)
     {
         printMenu();
         input = getUserOption();
-        processUserOption(input);
+        processUserOption(input, currentUser); // pass currentUser if needed
     }
 }
-
 
 void MerkelMain::printMenu()
 {
@@ -264,5 +288,6 @@ void MerkelMain::processUserOption(int userOption)
         showCandlesticks();
     }
 }
+
 
 
