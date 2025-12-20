@@ -11,6 +11,13 @@
 #include "OrderBookEntry.h"
 #include "CSVReader.h"
 
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <string>
+
+
 /* ================= CONSTRUCTOR ================= */
 
 MerkelMain::MerkelMain()
@@ -73,6 +80,7 @@ void MerkelMain::printMenu()
     std::cout << "9: Withdraw money\n";
     std::cout << "10: View recent transactions\n";
     std::cout << "11: View user summary\n";
+    std::cout << "12: View simulated trading\n";
     std::cout << "==============\n";
     std::cout << "Current time: " << currentTime << "\n";
 }
@@ -228,19 +236,32 @@ void MerkelMain::showCandlesticks()
 
 /* ================= TRANSACTIONS ================= */
 
-void MerkelMain::logTransaction(
-    const std::string& type,
-    const std::string& product,
-    double price,
-    double amount)
+void MerkelMain::logTransaction(const std::string& type,
+                                const std::string& product,
+                                double price,
+                                double amount,
+                                const std::string& timestamp)
 {
+    std::string ts = timestamp;
+    if (ts.empty())
+    {
+        // Generate current timestamp
+        auto now_time = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now_time);
+        std::tm* tmPtr = std::localtime(&t);
+        std::ostringstream oss;
+        oss << std::put_time(tmPtr, "%Y/%m/%d %H:%M:%S");
+        ts = oss.str();
+    }
+
+    // Log to CSV
     std::ofstream file("transactions.csv", std::ios::app);
     file << currentUser.username << ","
          << type << ","
          << product << ","
          << price << ","
          << amount << ","
-         << currentTime << "\n";
+         << ts << "\n";
 }
 
 void MerkelMain::showRecentTransactions(const std::string& username)
@@ -295,12 +316,73 @@ void MerkelMain::printUserSummary()
     std::cout << "Total spent: " << spent << "\n";
 }
 
+
+void MerkelMain::simulateUserTrading()
+{
+    // Get current system timestamp
+    auto now_time = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now_time);
+    std::tm* tmPtr = std::localtime(&t);
+
+    std::ostringstream oss;
+    oss << std::put_time(tmPtr, "%Y/%m/%d %H:%M:%S");  // matches your CSV format
+    std::string now = oss.str();
+    
+    auto products = orderBook.getKnownProducts();
+
+    // Use the latest timestamp in the order book as baseline
+    std::string currentTime = orderBook.getNextTime("0000/00/00 00:00:00");
+
+    for (const std::string& product : products)
+    {
+        // Get last known prices as baseline
+        auto asks = orderBook.getOrders(OrderBookType::ask, product, currentTime);
+        auto bids = orderBook.getOrders(OrderBookType::bid, product, currentTime);
+
+        double baseAsk = asks.empty() ? 100.0 : OrderBook::getLowPrice(asks);   // default if no asks
+        double baseBid = bids.empty() ? 95.0  : OrderBook::getHighPrice(bids);  // default if no bids
+
+        for (int i = 0; i < 5; ++i)
+        {
+            double askPrice = baseAsk * (1.0 + 0.01 * i);
+            double bidPrice = baseBid * (1.0 - 0.01 * i);
+            double amount = 0.1 * (i + 1);
+
+            // Create and insert ask
+            OrderBookEntry ask(
+                askPrice,
+                amount,
+                now,
+                product,
+                OrderBookType::ask
+            );
+            ask.username = currentUser.username;
+            orderBook.insertOrder(ask);
+            logTransaction("ASK", product, askPrice, amount, now);
+
+            // Create and insert bid
+            OrderBookEntry bid(
+                bidPrice,
+                amount,
+                now,
+                product,
+                OrderBookType::bid
+            );
+            bid.username = currentUser.username;
+            orderBook.insertOrder(bid);
+            logTransaction("BID", product, bidPrice, amount, now);
+        }
+    }
+
+    std::cout << "Simulated trading activity completed.\n";
+}
+
 /* ================= INPUT ================= */
 
 int MerkelMain::getUserOption()
 {
     std::string line;
-    std::cout << "Type 1-11: ";
+    std::cout << "Type 1-12: ";
     std::getline(std::cin, line);
 
     try { return std::stoi(line); }
@@ -322,6 +404,7 @@ void MerkelMain::processUserOption(int userOption)
     if (userOption == 9) withdrawMoney();
     if (userOption == 10) showRecentTransactions(currentUser.username);
     if (userOption == 11) printUserSummary();
+    if (userOption == 12) simulateUserTrading();
 }
 
 

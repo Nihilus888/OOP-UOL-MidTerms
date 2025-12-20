@@ -21,6 +21,12 @@ public:
     int getUserOption();
     void showCandlesticks();
     void processUserOption(int userOption);
+    void depositMoney();
+    void withdrawMoney();
+    void logTransaction(const std::string& type, const std::string& product, double price, double amount, const std::string& timestamp="");
+    void showRecentTransactions(const std::string& username);
+    void printUserSummary();
+    void simulateUserTrading();
 
 private:
     OrderBook orderBook;
