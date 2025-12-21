@@ -14,9 +14,7 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
-#include <sstream>
 #include <string>
-
 
 /* ================= CONSTRUCTOR ================= */
 
@@ -50,6 +48,10 @@ void MerkelMain::init()
             if (!currentUser.username.empty())
                 isLoggedIn = true;
         }
+        else
+        {
+            std::cout << "Invalid choice.\n";
+        }
     }
 
     std::cout << "\nWelcome, " << currentUser.fullName << "!\n";
@@ -80,7 +82,7 @@ void MerkelMain::printMenu()
     std::cout << "9: Withdraw money\n";
     std::cout << "10: View recent transactions\n";
     std::cout << "11: View user summary\n";
-    std::cout << "12: View simulated trading\n";
+    std::cout << "12: Simulate trading\n";
     std::cout << "==============\n";
     std::cout << "Current time: " << currentTime << "\n";
 }
@@ -97,6 +99,8 @@ void MerkelMain::printMarketStats()
     for (const std::string& product : orderBook.getKnownProducts())
     {
         auto asks = orderBook.getOrders(OrderBookType::ask, product, currentTime);
+        if (asks.empty()) continue;
+
         std::cout << "Product: " << product << "\n";
         std::cout << "Asks: " << asks.size() << "\n";
         std::cout << "High: " << OrderBook::getHighPrice(asks) << "\n";
@@ -114,21 +118,31 @@ void MerkelMain::enterAsk()
 
     auto tokens = CSVReader::tokenise(input, ',');
     if (tokens.size() != 3)
+    {
+        std::cout << "Bad input format.\n";
         return;
-
-    OrderBookEntry obe = CSVReader::stringsToOBE(
-        tokens[1], tokens[2], currentTime, tokens[0], OrderBookType::ask);
-
-    obe.username = currentUser.username;
-
-    if (wallet.canFulfillOrder(obe))
-    {
-        orderBook.insertOrder(obe);
-        logTransaction("ASK", obe.product, obe.price, obe.amount);
     }
-    else
+
+    try
     {
-        std::cout << "Insufficient funds.\n";
+        OrderBookEntry obe = CSVReader::stringsToOBE(
+            tokens[1], tokens[2], currentTime, tokens[0], OrderBookType::ask);
+
+        obe.username = currentUser.username;
+
+        if (wallet.canFulfillOrder(obe))
+        {
+            orderBook.insertOrder(obe);
+            logTransaction("ASK", obe.product, obe.price, obe.amount, currentTime);
+        }
+        else
+        {
+            std::cout << "Insufficient funds.\n";
+        }
+    }
+    catch (...)
+    {
+        std::cout << "Invalid numeric values.\n";
     }
 }
 
@@ -140,21 +154,31 @@ void MerkelMain::enterBid()
 
     auto tokens = CSVReader::tokenise(input, ',');
     if (tokens.size() != 3)
+    {
+        std::cout << "Bad input format.\n";
         return;
-
-    OrderBookEntry obe = CSVReader::stringsToOBE(
-        tokens[1], tokens[2], currentTime, tokens[0], OrderBookType::bid);
-
-    obe.username = currentUser.username;
-
-    if (wallet.canFulfillOrder(obe))
-    {
-        orderBook.insertOrder(obe);
-        logTransaction("BID", obe.product, obe.price, obe.amount);
     }
-    else
+
+    try
     {
-        std::cout << "Insufficient funds.\n";
+        OrderBookEntry obe = CSVReader::stringsToOBE(
+            tokens[1], tokens[2], currentTime, tokens[0], OrderBookType::bid);
+
+        obe.username = currentUser.username;
+
+        if (wallet.canFulfillOrder(obe))
+        {
+            orderBook.insertOrder(obe);
+            logTransaction("BID", obe.product, obe.price, obe.amount, currentTime);
+        }
+        else
+        {
+            std::cout << "Insufficient funds.\n";
+        }
+    }
+    catch (...)
+    {
+        std::cout << "Invalid numeric values.\n";
     }
 }
 
@@ -177,7 +201,7 @@ void MerkelMain::depositMoney()
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     wallet.insertCurrency(currency, amount);
-    logTransaction("DEPOSIT", "", 0, amount);
+    logTransaction("DEPOSIT", "", 0, amount, currentTime);
 
     std::cout << "Deposit successful.\n";
 }
@@ -195,7 +219,7 @@ void MerkelMain::withdrawMoney()
 
     if (wallet.removeCurrency(currency, amount))
     {
-        logTransaction("WITHDRAW", "", 0, amount);
+        logTransaction("WITHDRAW", "", 0, amount, currentTime);
         std::cout << "Withdrawal successful.\n";
     }
     else
@@ -230,8 +254,10 @@ void MerkelMain::showCandlesticks()
 
     auto candles = orderBook.getCandlesticks(product, OrderBookType::ask, tf);
     for (const auto& c : candles)
-        std::cout << c.date << " O:" << c.open << " H:" << c.high
-                  << " L:" << c.low << " C:" << c.close << "\n";
+        std::cout << c.date << " O:" << c.open
+                  << " H:" << c.high
+                  << " L:" << c.low
+                  << " C:" << c.close << "\n";
 }
 
 /* ================= TRANSACTIONS ================= */
@@ -242,26 +268,13 @@ void MerkelMain::logTransaction(const std::string& type,
                                 double amount,
                                 const std::string& timestamp)
 {
-    std::string ts = timestamp;
-    if (ts.empty())
-    {
-        // Generate current timestamp
-        auto now_time = std::chrono::system_clock::now();
-        std::time_t t = std::chrono::system_clock::to_time_t(now_time);
-        std::tm* tmPtr = std::localtime(&t);
-        std::ostringstream oss;
-        oss << std::put_time(tmPtr, "%Y/%m/%d %H:%M:%S");
-        ts = oss.str();
-    }
-
-    // Log to CSV
     std::ofstream file("transactions.csv", std::ios::app);
     file << currentUser.username << ","
          << type << ","
          << product << ","
          << price << ","
          << amount << ","
-         << ts << "\n";
+         << timestamp << "\n";
 }
 
 void MerkelMain::showRecentTransactions(const std::string& username)
@@ -316,31 +329,28 @@ void MerkelMain::printUserSummary()
     std::cout << "Total spent: " << spent << "\n";
 }
 
+/* ================= TASK 4: SIMULATION ================= */
 
 void MerkelMain::simulateUserTrading()
 {
-    // Get current system timestamp
+    // Real system timestamp (Task 4 requirement)
     auto now_time = std::chrono::system_clock::now();
     std::time_t t = std::chrono::system_clock::to_time_t(now_time);
     std::tm* tmPtr = std::localtime(&t);
 
     std::ostringstream oss;
-    oss << std::put_time(tmPtr, "%Y/%m/%d %H:%M:%S");  // matches your CSV format
+    oss << std::put_time(tmPtr, "%Y/%m/%d %H:%M:%S");
     std::string now = oss.str();
-    
-    auto products = orderBook.getKnownProducts();
 
-    // Use the latest timestamp in the order book as baseline
-    std::string currentTime = orderBook.getNextTime("0000/00/00 00:00:00");
+    auto products = orderBook.getKnownProducts();
 
     for (const std::string& product : products)
     {
-        // Get last known prices as baseline
         auto asks = orderBook.getOrders(OrderBookType::ask, product, currentTime);
         auto bids = orderBook.getOrders(OrderBookType::bid, product, currentTime);
 
-        double baseAsk = asks.empty() ? 100.0 : OrderBook::getLowPrice(asks);   // default if no asks
-        double baseBid = bids.empty() ? 95.0  : OrderBook::getHighPrice(bids);  // default if no bids
+        double baseAsk = asks.empty() ? 100.0 : OrderBook::getLowPrice(asks);
+        double baseBid = bids.empty() ? 95.0  : OrderBook::getHighPrice(bids);
 
         for (int i = 0; i < 5; ++i)
         {
@@ -348,26 +358,12 @@ void MerkelMain::simulateUserTrading()
             double bidPrice = baseBid * (1.0 - 0.01 * i);
             double amount = 0.1 * (i + 1);
 
-            // Create and insert ask
-            OrderBookEntry ask(
-                askPrice,
-                amount,
-                now,
-                product,
-                OrderBookType::ask
-            );
+            OrderBookEntry ask(askPrice, amount, now, product, OrderBookType::ask);
             ask.username = currentUser.username;
             orderBook.insertOrder(ask);
             logTransaction("ASK", product, askPrice, amount, now);
 
-            // Create and insert bid
-            OrderBookEntry bid(
-                bidPrice,
-                amount,
-                now,
-                product,
-                OrderBookType::bid
-            );
+            OrderBookEntry bid(bidPrice, amount, now, product, OrderBookType::bid);
             bid.username = currentUser.username;
             orderBook.insertOrder(bid);
             logTransaction("BID", product, bidPrice, amount, now);
@@ -393,6 +389,12 @@ int MerkelMain::getUserOption()
 
 void MerkelMain::processUserOption(int userOption)
 {
+    if (userOption < 1 || userOption > 12)
+    {
+        std::cout << "Invalid choice.\n";
+        return;
+    }
+
     if (userOption == 1) printHelp();
     if (userOption == 2) printMarketStats();
     if (userOption == 3) enterAsk();
@@ -406,5 +408,3 @@ void MerkelMain::processUserOption(int userOption)
     if (userOption == 11) printUserSummary();
     if (userOption == 12) simulateUserTrading();
 }
-
-
