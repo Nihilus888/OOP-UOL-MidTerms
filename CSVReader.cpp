@@ -54,7 +54,7 @@ OrderBookEntry CSVReader::stringsToOBE(std::vector<std::string> tokens)
 {
     double price, amount;
 
-    if (tokens.size() != 5) // bad
+    if (tokens.size() != 5) 
     {
         std::cout << "Bad line " << std::endl;
         throw std::exception{};
@@ -63,7 +63,7 @@ OrderBookEntry CSVReader::stringsToOBE(std::vector<std::string> tokens)
     try {
          price = std::stod(tokens[3]);
          amount = std::stod(tokens[4]);
-    }catch(const std::exception& e){
+    } catch(const std::exception& e){
         std::cout << "CSVReader::stringsToOBE Bad float! " << tokens[3]<< std::endl;
         std::cout << "CSVReader::stringsToOBE Bad float! " << tokens[4]<< std::endl; 
         throw;        

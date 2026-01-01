@@ -7,7 +7,6 @@
 
 static const std::string USER_FILE = "users.csv";
 
-/* ---------- helpers ---------- */
 
 std::string UserService::generateUsername()
 {
@@ -48,8 +47,6 @@ bool UserService::userExists(const std::string& email, const std::string& fullNa
     return false;
 }
 
-/* ---------- registration ---------- */
-
 User UserService::registerUser()
 {
     std::string fullName, email, password;
@@ -84,7 +81,6 @@ User UserService::registerUser()
     return User(username, fullName, email, pwHash);
 }
 
-/* ---------- login ---------- */
 
 User UserService::loginUser()
 {

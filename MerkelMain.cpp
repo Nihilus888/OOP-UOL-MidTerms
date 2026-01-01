@@ -16,14 +16,10 @@
 #include <iomanip>
 #include <string>
 
-/* ================= CONSTRUCTOR ================= */
-
 MerkelMain::MerkelMain()
     : orderBook("20200317.csv")
 {
 }
-
-/* ================= INIT ================= */
 
 void MerkelMain::init()
 {
@@ -67,8 +63,6 @@ void MerkelMain::init()
     }
 }
 
-/* ================= MENU ================= */
-
 void MerkelMain::printMenu()
 {
     std::cout << "\n1: Print help\n";
@@ -86,8 +80,6 @@ void MerkelMain::printMenu()
     std::cout << "==============\n";
     std::cout << "Current time: " << currentTime << "\n";
 }
-
-/* ================= CORE FEATURES ================= */
 
 void MerkelMain::printHelp()
 {
@@ -108,7 +100,6 @@ void MerkelMain::printMarketStats()
     }
 }
 
-/* ================= ASK / BID ================= */
 
 void MerkelMain::enterAsk()
 {
@@ -182,8 +173,6 @@ void MerkelMain::enterBid()
     }
 }
 
-/* ================= WALLET ================= */
-
 void MerkelMain::printWallet()
 {
     std::cout << wallet.toString() << "\n";
@@ -228,14 +217,10 @@ void MerkelMain::withdrawMoney()
     }
 }
 
-/* ================= TIME ================= */
-
 void MerkelMain::gotoNextTimeframe()
 {
     currentTime = orderBook.getNextTime(currentTime);
 }
-
-/* ================= CANDLESTICKS ================= */
 
 void MerkelMain::showCandlesticks()
 {
@@ -259,8 +244,6 @@ void MerkelMain::showCandlesticks()
                   << " L:" << c.low
                   << " C:" << c.close << "\n";
 }
-
-/* ================= TRANSACTIONS ================= */
 
 void MerkelMain::logTransaction(const std::string& type,
                                 const std::string& product,
@@ -329,11 +312,10 @@ void MerkelMain::printUserSummary()
     std::cout << "Total spent: " << spent << "\n";
 }
 
-/* ================= TASK 4: SIMULATION ================= */
 
 void MerkelMain::simulateUserTrading()
 {
-    // Real system timestamp (Task 4 requirement)
+    // Real system timestamp
     auto now_time = std::chrono::system_clock::now();
     std::time_t t = std::chrono::system_clock::to_time_t(now_time);
     std::tm* tmPtr = std::localtime(&t);
@@ -373,8 +355,6 @@ void MerkelMain::simulateUserTrading()
     std::cout << "Simulated trading activity completed.\n";
 }
 
-/* ================= INPUT ================= */
-
 int MerkelMain::getUserOption()
 {
     std::string line;
@@ -384,8 +364,6 @@ int MerkelMain::getUserOption()
     try { return std::stoi(line); }
     catch (...) { return 0; }
 }
-
-/* ================= DISPATCH ================= */
 
 void MerkelMain::processUserOption(int userOption)
 {

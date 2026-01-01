@@ -5,13 +5,11 @@
 #include <iostream>
 
 
-/** construct, reading a csv data file */
 OrderBook::OrderBook(std::string filename)
 {
     orders = CSVReader::readCSV(filename);
 }
 
-/** return vector of all know products in the dataset*/
 std::vector<std::string> OrderBook::getKnownProducts()
 {
     std::vector<std::string> products;
@@ -23,7 +21,7 @@ std::vector<std::string> OrderBook::getKnownProducts()
         prodMap[e.product] = true;
     }
     
-    // now flatten the map to a vector of strings
+    // flatten the map to a vector of strings
     for (auto const& e : prodMap)
     {
         products.push_back(e.first);
@@ -31,7 +29,7 @@ std::vector<std::string> OrderBook::getKnownProducts()
 
     return products;
 }
-/** return vector of Orders according to the sent filters*/
+
 std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type, 
                                         std::string product, 
                                         std::string timestamp)
@@ -106,7 +104,7 @@ std::vector<Candlestick> OrderBook::getCandlesticks(
 {
     std::map<std::string, std::vector<OrderBookEntry>> groupedOrders;
 
-    // 1. Filter orders and group by timeframe
+    // Filter orders and group by timeframe
     for (const OrderBookEntry& order : orders)
     {
         if (order.product != product || order.orderType != type)
@@ -131,7 +129,7 @@ std::vector<Candlestick> OrderBook::getCandlesticks(
         groupedOrders[key].push_back(order);
     }
 
-    // 2. Create candlesticks
+    // Create candlesticks
     std::vector<Candlestick> candlesticks;
 
     for (auto& pair : groupedOrders)
@@ -172,20 +170,16 @@ std::vector<Candlestick> OrderBook::getCandlesticks(
 
 std::vector<OrderBookEntry> OrderBook::matchAsksToBids(std::string product, std::string timestamp)
 {
-// asks = orderbook.asks
     std::vector<OrderBookEntry> asks = getOrders(OrderBookType::ask, 
                                                  product, 
                                                  timestamp);
-// bids = orderbook.bids
+
     std::vector<OrderBookEntry> bids = getOrders(OrderBookType::bid, 
                                                  product, 
                                                     timestamp);
 
-    // sales = []
     std::vector<OrderBookEntry> sales; 
 
-    // I put in a little check to ensure we have bids and asks
-    // to process.
     if (asks.size() == 0 || bids.size() == 0)
     {
         std::cout << " OrderBook::matchAsksToBids no bids or asks" << std::endl;
@@ -204,14 +198,11 @@ std::vector<OrderBookEntry> OrderBook::matchAsksToBids(std::string product, std:
     
     for (OrderBookEntry& ask : asks)
     {
-    //     for bid in bids:
         for (OrderBookEntry& bid : bids)
         {
-    //         if bid.price >= ask.price # we have a match
             if (bid.price >= ask.price)
             {
-    //             sale = new order()
-    //             sale.price = ask.price
+
             OrderBookEntry sale{ask.price, 0, timestamp, 
                 product, 
                 OrderBookType::asksale};
@@ -227,56 +218,33 @@ std::vector<OrderBookEntry> OrderBook::matchAsksToBids(std::string product, std:
                     sale.orderType =  OrderBookType::asksale;
                 }
             
-    //             # now work out how much was sold and 
-    //             # create new bids and asks covering 
-    //             # anything that was not sold
-    //             if bid.amount == ask.amount: # bid completely clears ask
                 if (bid.amount == ask.amount)
                 {
-    //                 sale.amount = ask.amount
                     sale.amount = ask.amount;
-    //                 sales.append(sale)
                     sales.push_back(sale);
-    //                 bid.amount = 0 # make sure the bid is not processed again
                     bid.amount = 0;
-    //                 # can do no more with this ask
-    //                 # go onto the next ask
-    //                 break
                     break;
                 }
-    //           if bid.amount > ask.amount:  # ask is completely gone slice the bid
+
                 if (bid.amount > ask.amount)
                 {
-    //                 sale.amount = ask.amount
+
                     sale.amount = ask.amount;
-    //                 sales.append(sale)
+
                     sales.push_back(sale);
-    //                 # we adjust the bid in place
-    //                 # so it can be used to process the next ask
-    //                 bid.amount = bid.amount - ask.amount
+
                     bid.amount =  bid.amount - ask.amount;
-    //                 # ask is completely gone, so go to next ask                
-    //                 break
                     break;
                 }
 
 
-    //             if bid.amount < ask.amount # bid is completely gone, slice the ask
                 if (bid.amount < ask.amount && 
                    bid.amount > 0)
                 {
-    //                 sale.amount = bid.amount
                     sale.amount = bid.amount;
-    //                 sales.append(sale)
                     sales.push_back(sale);
-    //                 # update the ask
-    //                 # and allow further bids to process the remaining amount
-    //                 ask.amount = ask.amount - bid.amount
                     ask.amount = ask.amount - bid.amount;
-    //                 bid.amount = 0 # make sure the bid is not processed again
                     bid.amount = 0;
-    //                 # some ask remains so go to the next bid
-    //                 continue
                     continue;
                 }
             }

@@ -15,11 +15,11 @@ void Wallet::insertCurrency(std::string type, double amount)
     {
         throw std::exception{};
     }
-    if (currencies.count(type) == 0) // not there yet
+    if (currencies.count(type) == 0) 
     {
         balance = 0;
     }
-    else { // is there 
+    else {
         balance = currencies[type];
     }
     balance += amount; 
@@ -32,26 +32,25 @@ bool Wallet::removeCurrency(std::string type, double amount)
     {
         return false; 
     }
-    if (currencies.count(type) == 0) // not there yet
+    if (currencies.count(type) == 0) 
     {
-        //std::cout << "No currency for " << type << std::endl;
+
         return false;
     }
-    else { // is there - do  we have enough
-        if (containsCurrency(type, amount))// we have enough
+    else { 
+        if (containsCurrency(type, amount))
         {
-            //std::cout << "Removing " << type << ": " << amount << std::endl;
             currencies[type] -= amount;
             return true;
         } 
-        else // they have it but not enough.
+        else 
             return false; 
     }
 }
 
 bool Wallet::containsCurrency(std::string type, double amount)
 {
-    if (currencies.count(type) == 0) // not there yet
+    if (currencies.count(type) == 0) 
         return false;
     else 
         return currencies[type] >= amount;
@@ -73,7 +72,6 @@ std::string Wallet::toString()
 bool Wallet::canFulfillOrder(OrderBookEntry order)
 {
     std::vector<std::string> currs = CSVReader::tokenise(order.product, '/');
-    // ask
     if (order.orderType == OrderBookType::ask)
     {
         double amount = order.amount;
@@ -82,7 +80,6 @@ bool Wallet::canFulfillOrder(OrderBookEntry order)
 
         return containsCurrency(currency, amount);
     }
-    // bid
     if (order.orderType == OrderBookType::bid)
     {
         double amount = order.amount * order.price;

@@ -11,8 +11,8 @@ public:
          const std::string& email,
          size_t passwordHash);
 
-    std::string username;   // 10-digit generated ID
+    std::string username;   
     std::string fullName;
     std::string email;
-    size_t passwordHash;    // std::hash result
+    size_t passwordHash;    
 };

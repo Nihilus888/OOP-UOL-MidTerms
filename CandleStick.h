@@ -4,7 +4,7 @@
 class Candlestick
 {
 public:
-    std::string date;   // YYYY
+    std::string date;   
     double open;
     double high;
     double low;

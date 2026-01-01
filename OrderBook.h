@@ -8,7 +8,6 @@
 class OrderBook
 {
 public:
-    // Avoids magic strings
     enum class TimeFrame
     {
         daily,
@@ -16,7 +15,6 @@ public:
         yearly
     };
 
-    /** construct, reading a csv data file */
     OrderBook(std::string filename);
 
     /** return vector of all known products in the dataset */
@@ -33,10 +31,8 @@ public:
         TimeFrame timeframe
     );
 
-    /** returns the earliest time in the orderbook */
     std::string getEarliestTime();
 
-    /** returns the next time after the sent time in the orderbook */
     std::string getNextTime(std::string timestamp);
 
     void insertOrder(OrderBookEntry& order);
